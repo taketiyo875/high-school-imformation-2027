@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Portal Hub</title>
+    <style>
+        /* --- 基本リセット & 背景設定 --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #50678c, #364a6b);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* スクロールを完全に禁止 */
+            padding: 1.5vh 2vw;
+        }
+
+        /* --- ヘッダー・ライブ時計 --- */
+        header {
+            text-align: center;
+            margin-bottom: 1.5vh;
+            flex-shrink: 0;
+        }
+        #clock-container {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 0.6vh 2vw;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        #time {
+            font-size: clamp(1.4rem, 3vh, 2.2rem);
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ffffff;
+        }
+        #date {
+            font-size: clamp(0.75rem, 1.4vh, 0.95rem);
+            color: #cbd5e1;
+            margin-top: 0.1vh;
+            font-weight: 500;
+        }
+
+        /* --- メインコンテナ --- */
+        .container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1.5vh;
+            height: calc(100vh - 10vh);
+        }
+
+        /* --- グリッドレイアウト --- */
+        .section-grid-top {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5vw;
+            flex: 1;
+        }
+        .section-grid-bottom {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5vw;
+            flex: 1.1;
+        }
+
+        /* --- 教科特化見出しエリア --- */
+        .heading-container {
+            grid-column: span 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin-bottom: -0.5vh;
+        }
+        .section-heading {
+            font-size: clamp(0.9rem, 1.8vh, 1.2rem);
+            font-weight: 700;
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.5vh 3vw;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            letter-spacing: 0.5px;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.02);
+        }
+
+        /* --- 豪華カードデザイン --- */
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            padding: 1.5vh 1.4vw 1.2vh 1.4vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.13);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        /* --- カード内部コンテンツ --- */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8vw;
+            margin-bottom: 0.8vh;
+        }
+        .card-icon {
+            font-size: clamp(1.2rem, 2.8vh, 1.8rem);
+        }
+        .card-title {
+            font-size: clamp(0.95rem, 2.1vh, 1.25rem);
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.3px;
+        }
+        .badge {
+            font-size: clamp(0.6rem, 1.2vh, 0.75rem);
+            padding: 0.2vh 0.6vw;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-left: auto;
+        }
+        .badge-tool { background: rgba(255, 255, 255, 0.2); color: #ffffff; }
+        .badge-op { background: rgba(255, 255, 255, 0.15); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.25); }
+
+        .card-subtext {
+            font-size: clamp(0.75rem, 1.4vh, 0.9rem);
+            color: #e2e8f0;
+            font-weight: 500;
+            margin-bottom: 0.6vh;
+            opacity: 0.85;
+        }
+        .target-alert {
+            font-size: clamp(0.7rem, 1.3vh, 0.85rem);
+            color: #ffb3c1;
+            font-weight: 700;
+            margin-bottom: 0.6vh;
+        }
+
+        /* --- 箇条書きデザイン --- */
+        .card-desc {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4vh;
+            margin-bottom: 1.2vh;
+        }
+        .card-desc li {
+            font-size: clamp(0.7rem, 1.35vh, 0.88rem);
+            color: #f1f5f9;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.4vw;
+            line-height: 1.3;
+        }
+        .card-desc li::before {
+            content: "•";
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: bold;
+        }
+
+        /* --- 横幅いっぱいの超大型ボタン --- */
+        .btn {
+            width: 100%;
+            padding: 1vh 1vw;
+            border-radius: 10px;
+            font-size: clamp(0.8rem, 1.6vh, 1.05rem);
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5vw;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* --- ボタン色グラデーション --- */
+        .btn-column { background: linear-gradient(135deg, #475569, #1e293b); } 
+        .btn-review { background: linear-gradient(135deg, #a855f7, #6d28d9); } 
+        .btn-countdown { background: linear-gradient(135deg, #0d9488, #115e59); } 
+
+        .btn-op-high { background: linear-gradient(135deg, #ff758f, #ff4d6d); } 
+        .btn-op-uni { background: linear-gradient(135deg, #9b2226, #6a040f); }  
+        .btn-op-math { background: linear-gradient(135deg, #ff8a75, #e76f51); } 
+        .btn-op-eng { background: linear-gradient(135deg, #f97316, #ea580c); }  
+
+        .btn:hover {
+            filter: brightness(1.15);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #ffffff;
+        }
+
+        /* --- スマホ用レスポンシブ --- */
+        @media (max-width: 768px) {
+            body {
+                overflow-y: auto;
+                padding: 15px;
+            }
+            .container {
+                height: auto;
+                gap: 20px;
+            }
+            .section-grid-top, .section-grid-bottom {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .heading-container {
+                grid-column: span 1;
+                margin-top: 10px;
+                margin-bottom: 0;
+            }
+            .card {
+                padding: 20px;
+            }
+            .btn {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ヘッダー（ライブ時計） -->
+    <header>
+        <div id="clock-container">
+            <div id="time">00:00:00</div>
+            <div id="date">2026年10月4日(日)</div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- 上段エリア：便利ツール3枚 -->
+        <section class="section-grid-top">
+            
+            <div class="card">
+                <div>
+                    <div class="card-header">
+                        <span class="card-icon">📝</span>
+                        <h2 class="card-title">コラム</h2>
+                        <span class="badge badge-tool">Notion</span>
+                    </div>
+                    <div class="card-subtext">役立つ学びのヒントが満載</div>
+                    <ul class="card-desc">
+                        <li>モチベ向上に繋がるお話</li>
+                        <li>効率的な勉強法のノウハウ</li>
+                        <li>合格を掴むためのアドバイス</li>
+                    </ul>
+                </div>
+                <a href="https://notion.site" target="_blank" class="btn btn-column">
+                    <span class="dot"></span>コラムを読む
+                </a>
+            </div>
+
+            <div class="card">
+                <div>
+                    <div class="card-header">
+                        <span class="card-icon">🎓</span>
+                        <h2 class="card-title">受験体験記</h2>
+                        <span class="badge badge-tool">Notion</span>
+                    </div>
+                    <div class="card-subtext">先輩たちの合格ストーリー</div>
+                    <ul class="card-desc">
+                        <li>先輩たちのリアルな合格体験談</li>
+                        <li>試験本番を乗り越える心構え</li>
+                        <li>お勧めの参考書・教材情報</li>
+                    </ul>
+                </div>
+コードは注意してご使用ください。
+受験体験記を見る
+
+⏳
+カウントダウン
+外部サイト
+
+本番までの残り日数を意識
+
+入試本番までのカウントダウン
+都道府県別の試験日スケジュール
+毎日のモチベーション維持に
+
+
+
+入試カウントダウン
+
+🏫
+高校受験生勉強会
+LINEオプチャ
+
+志望校合格を目指す仲間が集う場所
+
+中学生の毎日の勉強・進路相談
+わからない問題の教え合い環境
+仲間と励まし合って合格へ
+
+
+
+オープンチャットへ
+
+🏛️
+高校生勉強会
+LINEオプチャ
+
+※高校生の方はこちらも！
+難関大・大学受験を応援する場
+
+高校範囲のハイレベルな学習サポート
+受験生同士の情報交換・モチベ維持
+大学生の優秀なサポーターも在籍
+
+
+
+オープンチャットへ
+
+＼ 苦手克服・得意を伸ばす！教科特化型部屋 ／
+📐
+数学専門部屋
+教科特化
+
+得意な子も苦手な子も大歓迎
+
+中学生向け数学の基礎から応用まで
+質問すれば誰かが丁寧に解説・回答
+リラックスした雑談もOKな環境
+
+
+
+オープンチャットへ
+
+🔤
+英語勉強対策部屋
+教科特化
+
+定期テストから高校受験まで網羅
+
+英語勉強・定期テスト対策の専門部屋
+高校受験に向けた長文や文法の攻略
+基礎を固めて点数アップを狙う
+
+
+
+オープンチャットへ
+
+function updateClock() {
+const now = new Date();
+const hours = String(now.getHours()).padStart(2, '0');
+const minutes = String(now.getMinutes()).padStart(2, '0');
+const seconds = String(now.getSeconds()).padStart(2, '0');
+document.getElementById('time').textContent = ${hours}:${minutes}:${seconds};
+const year = now.getFullYear();
+const month = now.getMonth() + 1;
+const date = now.getDate();
+const dayList = ['日', '月', '火', '水', '木', '金', '土'];
+const day = dayList[now.getDay()];
+document.getElementById('date').textContent = ${year}年${month}月${date}日(${day});
+}
+setInterval(updateClock, 1000);
+updateClock();
